@@ -11,13 +11,13 @@ import org.json.JSONObject;
 
 import com.example.milabclass2.helpers.DataGetter;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
-public class HomeScreen extends ActionBarActivity {
+public class HomeScreen extends Activity {
 	
 	private ListView mainList;
 	

@@ -7,15 +7,15 @@ import org.apache.http.message.BasicNameValuePair;
 
 import com.example.milabclass2.helpers.DataSender;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.widget.EditText;
 
-public class LoginScreen extends ActionBarActivity {
+public class LoginScreen extends Activity {
 
 	private EditText inputFirstName;
 	private EditText inputLastName;
