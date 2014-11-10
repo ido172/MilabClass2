@@ -7,9 +7,11 @@ import java.util.List;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.example.milabclass2.helpers.DataGetter;
+import com.example.milabclass2.helpers.ServerAsyncParent;
+import com.example.milabclass2.helpers.ServerCommunicator;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -17,7 +19,7 @@ import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
-public class HomeScreen extends Activity {
+public class HomeScreen extends Activity implements ServerAsyncParent{
 	
 	private ListView mainList;
 	
@@ -26,7 +28,9 @@ public class HomeScreen extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home_screen);
+		
 		mainList = (ListView)findViewById(R.id.mainContainer);
+		
 		Intent intent = getIntent();
 		int uid = intent.getIntExtra("uid", -1);
 		getDataFromServer(uid);
@@ -35,8 +39,8 @@ public class HomeScreen extends Activity {
 	
 	public void getDataFromServer(int uid) {
 		ArrayList<NameValuePair> params = new ArrayList<NameValuePair>();
-		params.add(new BasicNameValuePair("uid", ""+uid));
-		new DataGetter(this, params).execute();
+		params.add(new BasicNameValuePair("uid", Integer.toString(uid)));
+		new ServerCommunicator(this, params, ServerCommunicator.METHOD_GET).execute("http://clashers.milab.idc.ac.il/php/milab_get_users.php");
 	}
 	
 	public void setDataFromServer(JSONArray users) {
@@ -63,7 +67,18 @@ public class HomeScreen extends Activity {
 	        SimpleAdapter adapter = new SimpleAdapter(this, fillMaps, R.layout.list_item, from, to);
 	        mainList.setAdapter(adapter);
 		} catch (Exception e) {
-			
+			e.printStackTrace();
 		}
+	}
+
+
+	@Override
+	public void doOnPostExecute(JSONObject jObj) {
+		try {
+			setDataFromServer(jObj.getJSONArray("users"));
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		
 	}
 }

@@ -8,57 +8,71 @@ import java.util.List;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.example.milabclass2.HomeScreen;
-
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
-public class DataGetter extends AsyncTask<Void, Void, Boolean> {
+public class ServerCommunicator extends AsyncTask<String, Void, Boolean> {
+	public static final String METHOD_POST = "POST";
+	public static final String METHOD_GET = "GET";
+	
 	private ProgressDialog dialog;
 
 	// url to update user status
-	private final String url = "http://clashers.milab.idc.ac.il/php/milab_get_users.php";
+	private final String method;
 	private List<NameValuePair> requestParams;
 	private InputStream is = null;
 	private String line = "";
 	private String json = "";
 	private JSONObject jObj = null;
-	private HomeScreen parentActivity;
+	private ServerAsyncParent parentActivity;
 
-	public DataGetter(HomeScreen activity, List<NameValuePair> params) {
+	public ServerCommunicator(ServerAsyncParent activity, List<NameValuePair> params, String method) {
 		parentActivity = activity;
-		dialog = new ProgressDialog(parentActivity);
+		dialog = new ProgressDialog((Context) parentActivity);
 		this.requestParams = params;
+		this.method = method;
 	}
 
 	@Override
 	protected void onPreExecute() {
 		super.onPreExecute();
-		dialog.setMessage("Getting data from server, please wait.");
+		dialog.setMessage("Sending request to server, please wait...");
 		dialog.show();
 	}
 
 	@Override
-	protected Boolean doInBackground(Void... params) {
-		boolean isSendOK = false;
+	protected Boolean doInBackground(String... params) {
+		boolean isRequestSucceeded = false;
 		try {
 
-			// create http request
-			String paramString = URLEncodedUtils.format(requestParams, "utf-8");
-			HttpGet httpGet = new HttpGet(url + "?" + paramString);
-			DefaultHttpClient httpClient = new DefaultHttpClient();
+			String url = params[0];
 			HttpResponse httpResponse;
+			HttpRequestBase httpMethod;
+			// create http request
+			if (method == METHOD_POST) {
+				HttpPost httpPost = new HttpPost(url);
+				httpPost.setEntity(new UrlEncodedFormEntity(requestParams, "utf-8"));
+				httpMethod = httpPost; 
+			} else {
+				String paramString = URLEncodedUtils.format(requestParams, "utf-8");
+				httpMethod = new HttpGet(url + "?" + paramString);
+			} 
+
+			DefaultHttpClient httpClient = new DefaultHttpClient();
 
 			// execute
-			httpResponse = httpClient.execute(httpGet);
+			httpResponse = httpClient.execute(httpMethod);
 
 			// get response from server and parse it to json
 			HttpEntity httpEntity = httpResponse.getEntity();
@@ -82,36 +96,32 @@ public class DataGetter extends AsyncTask<Void, Void, Boolean> {
 			int success = jObj.getInt("success");
 
 			if (success == 1) {
-				isSendOK = true;
-				Log.d("MiLAB Class", "Data sender succeed: " + json.toString());
+				isRequestSucceeded = true;
+				Log.d("MiLAB Class", "Request succeeded: " + json.toString());
 			} else {
 				// failed to update product
-				Log.d("MiLAB Class", "Data sender failed" + json.toString());
+				Log.d("MiLAB Class", "Request failed" + json.toString());
 			}
 		} catch (Exception e) {
-			Log.d("MiLAB Class", "Data sender failed");
+			Log.d("MiLAB Class", "Request failed");
 			e.printStackTrace();
 		}
 
-		return isSendOK;
+		return isRequestSucceeded;
 	}
 
 	@Override
-	protected void onPostExecute(Boolean isSendOK) {
+	protected void onPostExecute(Boolean isRequestSucceeded) {
 		if (dialog.isShowing()) {
 			dialog.dismiss();
 		}
 		
-		if (isSendOK) {
-			try {
-				parentActivity.setDataFromServer(jObj.getJSONArray("users"));
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
+		if (isRequestSucceeded) {
+			parentActivity.doOnPostExecute(jObj);
 		} else {
-			CharSequence text = "Get Data Faild!";
+			CharSequence text = "Send Data Faild!";
 			int duration = Toast.LENGTH_SHORT;
-			Toast toast = Toast.makeText(parentActivity, text, duration);
+			Toast toast = Toast.makeText((Context) parentActivity, text, duration);
 			toast.show();
 		}
 	}
